@@ -1,37 +1,103 @@
 package exchange
 
 import (
-	"fmt"
+	"encoding/json"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"net/url"
 )
 
-const url = "https://yfapi.net/v6/finance/quote?region=US&lang=en"
-
 type Quote struct {
-	Region    string
-	QuoteType string
-	ShortName string
-	Bid       float32
-	Ask       float32
+	QuoteResponse struct {
+		Result []struct {
+			Language                          string  `json:"language"`
+			Region                            string  `json:"region"`
+			QuoteType                         string  `json:"quoteType"`
+			QuoteSourceName                   string  `json:"quoteSourceName"`
+			Triggerable                       bool    `json:"triggerable"`
+			Currency                          string  `json:"currency"`
+			FiftyTwoWeekLow                   float64 `json:"fiftyTwoWeekLow"`
+			FiftyTwoWeekHigh                  float64 `json:"fiftyTwoWeekHigh"`
+			FiftyDayAverage                   float64 `json:"fiftyDayAverage"`
+			TwoHundredDayAverage              float64 `json:"twoHundredDayAverage"`
+			RegularMarketChange               float64 `json:"regularMarketChange"`
+			RegularMarketChangePercent        float64 `json:"regularMarketChangePercent"`
+			RegularMarketPrice                float64 `json:"regularMarketPrice"`
+			RegularMarketDayHigh              float64 `json:"regularMarketDayHigh"`
+			RegularMarketDayLow               float64 `json:"regularMarketDayLow"`
+			RegularMarketPreviousClose        float64 `json:"regularMarketPreviousClose"`
+			Bid                               float64 `json:"bid"`
+			Ask                               float64 `json:"ask"`
+			RegularMarketOpen                 float64 `json:"regularMarketOpen"`
+			ShortName                         string  `json:"shortName"`
+			FiftyTwoWeekRange                 string  `json:"fiftyTwoWeekRange"`
+			FiftyTwoWeekHighChange            float64 `json:"fiftyTwoWeekHighChange"`
+			FiftyTwoWeekHighChangePercent     float64 `json:"fiftyTwoWeekHighChangePercent"`
+			FiftyDayAverageChange             float64 `json:"fiftyDayAverageChange"`
+			FiftyDayAverageChangePercent      float64 `json:"fiftyDayAverageChangePercent"`
+			TwoHundredDayAverageChange        float64 `json:"twoHundredDayAverageChange"`
+			TwoHundredDayAverageChangePercent float64 `json:"twoHundredDayAverageChangePercent"`
+			SourceInterval                    int     `json:"sourceInterval"`
+			ExchangeDataDelayedBy             int     `json:"exchangeDataDelayedBy"`
+			Tradeable                         bool    `json:"tradeable"`
+			FirstTradeDateMilliseconds        int64   `json:"firstTradeDateMilliseconds"`
+			PriceHint                         int     `json:"priceHint"`
+			MessageBoardId                    string  `json:"messageBoardId"`
+			ExchangeTimezoneName              string  `json:"exchangeTimezoneName"`
+			ExchangeTimezoneShortName         string  `json:"exchangeTimezoneShortName"`
+			GmtOffSetMilliseconds             int     `json:"gmtOffSetMilliseconds"`
+			Market                            string  `json:"market"`
+			EsgPopulated                      bool    `json:"esgPopulated"`
+			Exchange                          string  `json:"exchange"`
+			MarketState                       string  `json:"marketState"`
+			RegularMarketTime                 int     `json:"regularMarketTime"`
+			RegularMarketDayRange             string  `json:"regularMarketDayRange"`
+			RegularMarketVolume               int     `json:"regularMarketVolume"`
+			BidSize                           int     `json:"bidSize"`
+			AskSize                           int     `json:"askSize"`
+			FullExchangeName                  string  `json:"fullExchangeName"`
+			AverageDailyVolume3Month          int     `json:"averageDailyVolume3Month"`
+			AverageDailyVolume10Day           int     `json:"averageDailyVolume10Day"`
+			FiftyTwoWeekLowChange             float64 `json:"fiftyTwoWeekLowChange"`
+			FiftyTwoWeekLowChangePercent      float64 `json:"fiftyTwoWeekLowChangePercent"`
+			Symbol                            string  `json:"symbol"`
+		} `json:"result"`
+		Error interface{} `json:"error"`
+	} `json:"quoteResponse"`
 }
 
-func GetCurrency(fromCurrency string, toCurrency string, apiKey string) Quote {
-	currencyParam := "&symbols=" + fromCurrency + toCurrency + "%3DX"
-	finalUrl := url + currencyParam
-	req, _ := http.NewRequest("GET", finalUrl, nil)
+func GetCurrency(fromCurrency string, toCurrency string, apiKey string) (*Quote, error) {
+	v := url.Values{
+		"region":  []string{"US"},
+		"lang":    []string{"en"},
+		"symbols": []string{fromCurrency + toCurrency + "%3DX"},
+	}
+
+	targetUrl := url.URL{
+		Scheme:   "https",
+		Host:     "yfapi.net",
+		Path:     "v6/finance/quote",
+		RawQuery: v.Encode(),
+	}
+
+	req, _ := http.NewRequest("GET", targetUrl.String(), nil)
 	req.Header.Set("accept", "application/json")
 	req.Header.Set("X-API-KEY", apiKey)
 	res, _ := http.DefaultClient.Do(req)
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Println("file doesn't closed")
+		}
+	}(res.Body)
 	body, _ := ioutil.ReadAll(res.Body)
-	fmt.Println(string(body))
 
-	return Quote{
-		Region:    "US",
-		QuoteType: "CURRENCY",
-		ShortName: "USD/RUB",
-		Bid:       74.19673,
-		Ask:       74.20387,
+	result := &Quote{}
+	err := json.Unmarshal(body, result)
+	if err != nil {
+		return nil, err
 	}
+	return result, nil
 }
