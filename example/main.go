@@ -7,7 +7,8 @@ import (
 )
 
 func main() {
-	UsRu, err := exchange.GetCurrency("RUB", "USD", "111")
+	pair := exchange.Pair{From: exchange.Ruble, To: exchange.DollarUSA}
+	UsRu, err := exchange.GetCurrency(pair, "111")
 	if err != nil {
 		log.Println(err)
 	}

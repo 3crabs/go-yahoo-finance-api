@@ -80,14 +80,14 @@ type Pair struct {
 	To   string
 }
 
-func (p *Pair) GetIds() string {
+func (p *Pair) ToString() string {
 	return p.From + p.To + "%3DX"
 }
 
 func GetCurrencies(pairList []Pair, apiKey string) (*Quote, error) {
 	var symbols string
 	for _, pair := range pairList {
-		v := "," + pair.From + pair.To + "%3DX"
+		v := "," + pair.ToString()
 		symbols += v
 	}
 	if len(symbols) > 0 {
@@ -100,8 +100,8 @@ func GetCurrencies(pairList []Pair, apiKey string) (*Quote, error) {
 	return quote, nil
 }
 
-func GetCurrency(fromCurrency string, toCurrency string, apiKey string) (*Quote, error) {
-	symbols := fromCurrency + toCurrency + "%3DX"
+func GetCurrency(pair Pair, apiKey string) (*Quote, error) {
+	symbols := pair.ToString()
 	quote, err := sendYahooRequest(symbols, apiKey)
 	if err != nil {
 		return nil, err
