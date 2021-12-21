@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type Quote struct {
@@ -68,11 +69,51 @@ type Quote struct {
 	} `json:"quoteResponse"`
 }
 
+const (
+	Euro      = "EUR"
+	DollarUSA = "USD"
+	Ruble     = "RUB"
+)
+
+type Pair struct {
+	From string
+	To   string
+}
+
+func (p *Pair) GetIds() string {
+	return p.From + p.To + "%3DX"
+}
+
+func GetCurrencies(pairList []Pair, apiKey string) (*Quote, error) {
+	var symbols string
+	for _, pair := range pairList {
+		v := "," + pair.From + pair.To + "%3DX"
+		symbols += v
+	}
+	if len(symbols) > 0 {
+		symbols = strings.TrimPrefix(symbols, ",")
+	}
+	quote, err := sendYahooRequest(symbols, apiKey)
+	if err != nil {
+		return nil, err
+	}
+	return quote, nil
+}
+
 func GetCurrency(fromCurrency string, toCurrency string, apiKey string) (*Quote, error) {
+	symbols := fromCurrency + toCurrency + "%3DX"
+	quote, err := sendYahooRequest(symbols, apiKey)
+	if err != nil {
+		return nil, err
+	}
+	return quote, nil
+}
+
+func sendYahooRequest(symbols string, apiKey string) (*Quote, error) {
 	v := url.Values{
 		"region":  []string{"US"},
 		"lang":    []string{"en"},
-		"symbols": []string{fromCurrency + toCurrency + "%3DX"},
+		"symbols": []string{symbols},
 	}
 
 	targetUrl := url.URL{
