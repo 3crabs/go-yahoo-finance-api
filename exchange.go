@@ -93,7 +93,7 @@ func GetCurrencies(pairList []Pair, apiKey string) (*Quote, error) {
 	if len(symbols) > 0 {
 		symbols = strings.TrimPrefix(symbols, ",")
 	}
-	quote, err := sendYahooRequest(symbols, apiKey)
+	quote, err := getYahooQuote(symbols, apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -102,14 +102,14 @@ func GetCurrencies(pairList []Pair, apiKey string) (*Quote, error) {
 
 func GetCurrency(pair Pair, apiKey string) (*Quote, error) {
 	symbols := pair.ToString()
-	quote, err := sendYahooRequest(symbols, apiKey)
+	quote, err := getYahooQuote(symbols, apiKey)
 	if err != nil {
 		return nil, err
 	}
 	return quote, nil
 }
 
-func sendYahooRequest(symbols string, apiKey string) (*Quote, error) {
+func getYahooQuote(symbols string, apiKey string) (*Quote, error) {
 	v := url.Values{
 		"region":  []string{"US"},
 		"lang":    []string{"en"},
